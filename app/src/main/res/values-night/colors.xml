@@ -1,0 +1,6 @@
+<resources>
+    <color name="background_light">#FF1C1B1F</color>
+    <color name="surface_light">#FF2B2930</color>
+    <color name="text_primary_light">#FFE6E1E5</color>
+    <color name="text_secondary_light">#FFCAC4D0</color>
+</resources>

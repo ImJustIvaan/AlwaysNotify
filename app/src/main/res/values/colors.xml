@@ -1,0 +1,12 @@
+<resources>
+    <color name="purple_500">#FF6750A4</color>
+    <color name="purple_700">#FF4F378B</color>
+    <color name="teal_200">#FF03DAC5</color>
+
+    <color name="background_light">#FFFDF7FF</color>
+    <color name="surface_light">#FFF3EDF7</color>
+    <color name="text_primary_light">#FF1C1B1F</color>
+    <color name="text_secondary_light">#FF49454F</color>
+
+    <color name="ic_launcher_background">#FF4F378B</color>
+</resources>
