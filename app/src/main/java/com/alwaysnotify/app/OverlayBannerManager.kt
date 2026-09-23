@@ -15,6 +15,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 
 /**
  * Draws a heads-up-style banner on top of whatever app is currently on
@@ -53,6 +54,7 @@ object OverlayBannerManager {
     ) {
         if (!canDrawOverlays(context)) {
             Log.w(TAG, "show() called but overlay permission is not granted; skipping banner for key=$key")
+            Toast.makeText(context, "AlwaysNotify: overlay permission not granted", Toast.LENGTH_SHORT).show()
             return
         }
         Log.d(TAG, "show() scheduling banner for key=$key appLabel=$appLabel title=$title")
@@ -117,6 +119,7 @@ object OverlayBannerManager {
                 view.translationY = -400f
                 view.animate().translationY(0f).setDuration(220).start()
                 Log.d(TAG, "Banner view added to WindowManager for key=$key")
+                Toast.makeText(appContext, "AlwaysNotify: banner added", Toast.LENGTH_SHORT).show()
 
                 val runnable = Runnable { removeCurrent() }
                 dismissRunnable = runnable
@@ -127,6 +130,11 @@ object OverlayBannerManager {
                 // shrinking edge case) also crashing the process silently in the
                 // background.
                 Log.e(TAG, "Failed to show banner for key=$key", e)
+                Toast.makeText(
+                    appContext,
+                    "AlwaysNotify failed: ${e.javaClass.simpleName}: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
                 currentKey = null
             }
         }

@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import android.widget.Toast
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.os.BundleCompat
 
@@ -22,21 +23,33 @@ class AlwaysNotifyListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         Log.d(TAG, "Listener connected")
+        toast("AlwaysNotify: listener connected")
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
-        Log.d(TAG, "onNotificationPosted from ${sbn.packageName} (selected=${PrefsManager.isSelected(this, sbn.packageName)})")
+        val selected = PrefsManager.isSelected(this, sbn.packageName)
+        Log.d(TAG, "onNotificationPosted from ${sbn.packageName} (selected=$selected)")
+
+        // DEBUG: temporary, remove once the overlay is confirmed working on-device.
+        if (selected) toast("AlwaysNotify: notification from ${sbn.packageName}")
 
         if (sbn.packageName == packageName) return
         if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) {
             Log.d(TAG, "Skipping group summary notification from ${sbn.packageName}")
+            if (selected) toast("AlwaysNotify: skipped (group summary)")
             return
         }
-        if (!PrefsManager.isSelected(this, sbn.packageName)) return
+        if (!selected) return
 
+        toast("AlwaysNotify: calling show()")
         showOverlay(sbn)
+    }
+
+    // DEBUG: temporary visible checkpoint so this is diagnosable without adb access.
+    private fun toast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
