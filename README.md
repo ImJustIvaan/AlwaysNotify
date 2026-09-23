@@ -35,13 +35,21 @@ app/src/main/java/com/alwaysnotify/app/
 ## Building
 
 A GitHub Actions workflow (`.github/workflows/android-build.yml`) builds a
-debug APK on every push and uploads it as a workflow artifact.
+full **release** APK (R8 code shrinking + resource shrinking enabled) on
+every push and uploads it as a workflow artifact.
+
+The release build is signed with AGP's auto-managed debug keystore, so the
+APK is installable out of the box with no signing secrets to configure. For
+a Play Store submission, swap in a real upload keystore: add a
+`signingConfigs.release` block in `app/build.gradle.kts` backed by keystore
+credentials stored as GitHub Actions secrets, and point the `release`
+build type's `signingConfig` at it instead.
 
 To build locally with Android Studio or the Gradle CLI, you'll need the
 Android SDK installed (`compileSdk 34`, `minSdk 26`):
 
 ```
-gradle assembleDebug
+gradle assembleRelease
 ```
 
 ## Permissions required on-device

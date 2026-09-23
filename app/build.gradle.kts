@@ -17,11 +17,16 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Signed with AGP's auto-managed debug keystore so CI can produce an
+            // installable release APK with no secrets to manage. For a Play Store
+            // release, replace this with a real upload keystore + signing secrets.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
