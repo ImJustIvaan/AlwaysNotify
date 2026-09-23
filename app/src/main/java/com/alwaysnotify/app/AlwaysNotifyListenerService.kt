@@ -80,6 +80,19 @@ class AlwaysNotifyListenerService : NotificationListenerService() {
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS was denied; nothing to boost until the user grants it.
         }
+
+        // In addition to the lock-screen-visible notification above, pop a banner on
+        // top of whatever app is currently open, so the alert isn't missed even if
+        // the device's own heads-up UI is suppressed.
+        OverlayBannerManager.show(
+            context = this,
+            appLabel = appLabelFor(sbn.packageName),
+            title = title,
+            text = bigText,
+            icon = largeIcon,
+            bigPicture = bigPicture,
+            contentIntent = source.contentIntent
+        )
     }
 
     private fun extractLargeIcon(sbn: StatusBarNotification): Bitmap? {

@@ -3,6 +3,7 @@ package com.alwaysnotify.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -18,6 +19,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var listenerStatusText: TextView
     private lateinit var postNotificationsStatusText: TextView
+    private lateinit var overlayStatusText: TextView
     private lateinit var grantPostNotificationsButton: Button
 
     private val postNotificationsPermissionLauncher =
@@ -34,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 
         listenerStatusText = findViewById(R.id.listenerStatusText)
         postNotificationsStatusText = findViewById(R.id.postNotificationsStatusText)
+        overlayStatusText = findViewById(R.id.overlayStatusText)
         grantPostNotificationsButton = findViewById(R.id.grantPostNotificationsButton)
 
         findViewById<Button>(R.id.grantListenerButton).setOnClickListener {
@@ -44,6 +47,12 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 postNotificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+
+        findViewById<Button>(R.id.grantOverlayButton).setOnClickListener {
+            startActivity(
+                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            )
         }
 
         findViewById<Button>(R.id.chooseAppsButton).setOnClickListener {
@@ -59,6 +68,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         updateListenerStatus()
         updatePostNotificationsStatus()
+        updateOverlayStatus()
     }
 
     private fun updateListenerStatus() {
@@ -74,6 +84,13 @@ class MainActivity : AppCompatActivity() {
             PackageManager.PERMISSION_GRANTED
         postNotificationsStatusText.setText(
             if (granted) R.string.post_notifications_status_enabled else R.string.post_notifications_status_disabled
+        )
+    }
+
+    private fun updateOverlayStatus() {
+        val granted = OverlayBannerManager.canDrawOverlays(this)
+        overlayStatusText.setText(
+            if (granted) R.string.overlay_status_enabled else R.string.overlay_status_disabled
         )
     }
 }
