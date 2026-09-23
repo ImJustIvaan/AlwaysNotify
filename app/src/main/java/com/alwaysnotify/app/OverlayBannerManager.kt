@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -27,6 +28,7 @@ import android.widget.TextView
  */
 object OverlayBannerManager {
 
+    private const val TAG = "AlwaysNotify"
     private const val AUTO_DISMISS_MS = 6000L
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -49,66 +51,83 @@ object OverlayBannerManager {
         bigPicture: Bitmap?,
         contentIntent: PendingIntent?
     ) {
-        if (!canDrawOverlays(context)) return
+        if (!canDrawOverlays(context)) {
+            Log.w(TAG, "show() called but overlay permission is not granted; skipping banner for key=$key")
+            return
+        }
+        Log.d(TAG, "show() scheduling banner for key=$key appLabel=$appLabel title=$title")
         val appContext = context.applicationContext
 
         mainHandler.post {
-            val wm = windowManager
-                ?: (appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager).also { windowManager = it }
-
-            removeCurrent()
-            currentKey = key
-
-            val view = LayoutInflater.from(appContext).inflate(R.layout.overlay_banner, null)
-            view.findViewById<TextView>(R.id.bannerAppLabel).text = appLabel
-            view.findViewById<TextView>(R.id.bannerTitle).text = title
-            view.findViewById<TextView>(R.id.bannerText).text = text
-
-            val iconView = view.findViewById<ImageView>(R.id.bannerIcon)
-            if (icon != null) iconView.setImageBitmap(icon) else iconView.setImageResource(R.drawable.ic_notification)
-
-            val imageView = view.findViewById<ImageView>(R.id.bannerImage)
-            if (bigPicture != null) {
-                imageView.visibility = View.VISIBLE
-                imageView.setImageBitmap(bigPicture)
-            } else {
-                imageView.visibility = View.GONE
-            }
-
-            view.setOnClickListener {
-                try {
-                    contentIntent?.send()
-                } catch (_: PendingIntent.CanceledException) {
-                    // The source app's pending intent is no longer valid; nothing to open.
-                }
-                removeCurrent()
-            }
-            view.findViewById<ImageView>(R.id.bannerClose).setOnClickListener { removeCurrent() }
-
-            val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                overlayWindowType(),
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT
-            ).apply {
-                gravity = Gravity.TOP
-                y = (16 * appContext.resources.displayMetrics.density).toInt()
-            }
-
+            // Everything here runs as a posted Runnable on the main thread: any
+            // uncaught exception (a bad resource lookup, an OEM WindowManager
+            // quirk, a revoked permission) would otherwise crash the whole app
+            // process silently in the background, with no user-visible banner
+            // and often no obvious crash dialog either. Wrap it all so a failure
+            // is logged instead of taking the app down.
             try {
+                val wm = windowManager
+                    ?: (appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
+                        .also { windowManager = it }
+
+                removeCurrent()
+                currentKey = key
+
+                val view = LayoutInflater.from(appContext).inflate(R.layout.overlay_banner, null)
+                view.findViewById<TextView>(R.id.bannerAppLabel).text = appLabel
+                view.findViewById<TextView>(R.id.bannerTitle).text = title
+                view.findViewById<TextView>(R.id.bannerText).text = text
+
+                val iconView = view.findViewById<ImageView>(R.id.bannerIcon)
+                if (icon != null) iconView.setImageBitmap(icon) else iconView.setImageResource(R.drawable.ic_notification)
+
+                val imageView = view.findViewById<ImageView>(R.id.bannerImage)
+                if (bigPicture != null) {
+                    imageView.visibility = View.VISIBLE
+                    imageView.setImageBitmap(bigPicture)
+                } else {
+                    imageView.visibility = View.GONE
+                }
+
+                view.setOnClickListener {
+                    try {
+                        contentIntent?.send()
+                    } catch (_: PendingIntent.CanceledException) {
+                        // The source app's pending intent is no longer valid; nothing to open.
+                    }
+                    removeCurrent()
+                }
+                view.findViewById<ImageView>(R.id.bannerClose).setOnClickListener { removeCurrent() }
+
+                val params = WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    overlayWindowType(),
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    PixelFormat.TRANSLUCENT
+                ).apply {
+                    gravity = Gravity.TOP
+                    y = (16 * appContext.resources.displayMetrics.density).toInt()
+                }
+
                 wm.addView(view, params)
                 bannerView = view
                 view.translationY = -400f
                 view.animate().translationY(0f).setDuration(220).start()
+                Log.d(TAG, "Banner view added to WindowManager for key=$key")
 
                 val runnable = Runnable { removeCurrent() }
                 dismissRunnable = runnable
                 mainHandler.postDelayed(runnable, AUTO_DISMISS_MS)
-            } catch (_: Exception) {
-                // Overlay permission may have been revoked between the check and now.
+            } catch (e: Throwable) {
+                // Catches Throwable rather than Exception as extra insurance against
+                // an Error (e.g. NoSuchMethodError/NoClassDefFoundError from an R8
+                // shrinking edge case) also crashing the process silently in the
+                // background.
+                Log.e(TAG, "Failed to show banner for key=$key", e)
+                currentKey = null
             }
         }
     }

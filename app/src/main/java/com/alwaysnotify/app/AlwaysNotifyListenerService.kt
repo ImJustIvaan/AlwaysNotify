@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.os.BundleCompat
 
@@ -18,11 +19,21 @@ import androidx.core.os.BundleCompat
  */
 class AlwaysNotifyListenerService : NotificationListenerService() {
 
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        Log.d(TAG, "Listener connected")
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
+        Log.d(TAG, "onNotificationPosted from ${sbn.packageName} (selected=${PrefsManager.isSelected(this, sbn.packageName)})")
+
         if (sbn.packageName == packageName) return
-        if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
+        if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) {
+            Log.d(TAG, "Skipping group summary notification from ${sbn.packageName}")
+            return
+        }
         if (!PrefsManager.isSelected(this, sbn.packageName)) return
 
         showOverlay(sbn)
@@ -99,5 +110,9 @@ class AlwaysNotifyListenerService : NotificationListenerService() {
         } catch (_: Exception) {
             packageName
         }
+    }
+
+    companion object {
+        private const val TAG = "AlwaysNotify"
     }
 }
