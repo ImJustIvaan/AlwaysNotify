@@ -1,29 +1,33 @@
 # AlwaysNotify
 
-An Android app that boosts notifications from apps you choose into large,
-high-priority alerts that show as heads-up banners and are fully visible on
-the lock screen — so you never miss the ones that matter.
+An Android app that boosts notifications from apps you choose into a banner
+that pops up on top of whatever app you're currently using — so you never
+miss the ones that matter.
 
 ## How it works
 
 - `AlwaysNotifyListenerService` is a `NotificationListenerService` that
   observes every notification posted on the device.
-- For any app you've enabled in **Choose apps**, it reposts a boosted copy
-  on a dedicated `IMPORTANCE_HIGH` notification channel with
-  `VISIBILITY_PUBLIC`, so the system shows it as a heads-up banner and
-  displays its full content on the lock screen. If the source notification
-  carried an image (a photo, album art, a big-picture attachment), it's
-  carried over via `BigPictureStyle`.
-- `OverlayBannerManager` additionally draws that same alert as a banner on
-  top of whatever app is currently open, using a `TYPE_APPLICATION_OVERLAY`
-  window — independent of the system's own heads-up UI, which some OEMs
-  delay or suppress. It auto-dismisses after a few seconds, or on tap
-  (which opens the source notification's content intent) or the close
-  button. This only renders while the device is unlocked and in use; the
-  lock-screen notification above is what covers the locked case.
-- `MainActivity` walks through the permissions the app needs (notification
-  listener access, `POST_NOTIFICATIONS` on Android 13+, and the "display
-  over other apps" overlay permission) and links to **Choose apps**.
+- For any app you've enabled in **Choose apps**, it hands the notification's
+  content off to `OverlayBannerManager`, which draws it as a banner card at
+  the top of the screen using a `TYPE_APPLICATION_OVERLAY` window, on top of
+  whatever app is currently open — independent of the system's own heads-up
+  notification UI, which some OEMs delay or suppress.
+- **AlwaysNotify never posts an actual system notification.** The overlay
+  banner is the only alert it shows, so there's no duplicate entry sitting
+  next to the source app's own notification in the shade. This also means
+  the banner only appears while the device is unlocked and in use — a
+  normal app can't draw over the lock screen without posting a real,
+  system-managed notification, so a locked device won't show anything from
+  AlwaysNotify (the source app's own notification, if it posts one, still
+  behaves normally there).
+- The banner shows the app's label, title, text, icon, and the source
+  notification's image if it had one (a photo, album art, a big-picture
+  attachment). Tap it to open the source notification's content intent,
+  tap the close button, or wait ~6 seconds for it to auto-dismiss.
+- `MainActivity` walks through the two permissions the app needs
+  (notification listener access, and "display over other apps") and links
+  to **Choose apps**.
 - `AppSelectionActivity` lists every installed app with a search box and a
   checkbox per app; selections are stored in `SharedPreferences` via
   `PrefsManager`.
@@ -32,8 +36,7 @@ the lock screen — so you never miss the ones that matter.
 
 ```
 app/src/main/java/com/alwaysnotify/app/
-  AlwaysNotifyApp.kt              creates the notification channel
-  AlwaysNotifyListenerService.kt  the core notification-boosting logic
+  AlwaysNotifyListenerService.kt  reads notifications, filters to selected apps
   OverlayBannerManager.kt         draws the boosted alert over other apps
   MainActivity.kt                 permission setup screen
   AppSelectionActivity.kt         per-app selection screen
@@ -66,8 +69,6 @@ gradle assembleRelease
 
 1. **Notification access** — granted via Settings ▸ Apps ▸ Special access ▸
    Notification access (the app links directly to this screen).
-2. **Post notifications** — the standard Android 13+ runtime permission,
-   requested from the main screen.
-3. **Display over other apps** (`SYSTEM_ALERT_WINDOW`) — optional but
-   needed for the overlay banner; without it, boosted alerts still show as
-   lock-screen-visible notifications, just not as an on-top overlay.
+2. **Display over other apps** (`SYSTEM_ALERT_WINDOW`) — required for the
+   overlay banner; without it, AlwaysNotify has no way to show boosted
+   alerts at all, since it doesn't post its own notifications.

@@ -17,10 +17,11 @@ import android.widget.TextView
 
 /**
  * Draws a heads-up-style banner on top of whatever app is currently on
- * screen, independent of the system's own heads-up notification UI (which
- * some OEMs delay or suppress). This is additive to the boosted lock-screen
- * notification, not a replacement for it - the overlay only shows while the
- * device is unlocked and in use.
+ * screen, independent of the system's own notification UI entirely - this
+ * is the only alert AlwaysNotify shows; it never posts an actual
+ * Notification, so there's no duplicate entry in the shade. It only shows
+ * while the device is unlocked and in use (a normal app can't draw over the
+ * lock screen without posting a real notification).
  *
  * Requires the "display over other apps" (SYSTEM_ALERT_WINDOW) permission.
  */
@@ -32,6 +33,7 @@ object OverlayBannerManager {
     private var windowManager: WindowManager? = null
     private var bannerView: View? = null
     private var dismissRunnable: Runnable? = null
+    private var currentKey: String? = null
 
     fun canDrawOverlays(context: Context): Boolean {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
@@ -39,6 +41,7 @@ object OverlayBannerManager {
 
     fun show(
         context: Context,
+        key: String,
         appLabel: CharSequence,
         title: CharSequence,
         text: CharSequence,
@@ -54,6 +57,7 @@ object OverlayBannerManager {
                 ?: (appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager).also { windowManager = it }
 
             removeCurrent()
+            currentKey = key
 
             val view = LayoutInflater.from(appContext).inflate(R.layout.overlay_banner, null)
             view.findViewById<TextView>(R.id.bannerAppLabel).text = appLabel
@@ -109,11 +113,10 @@ object OverlayBannerManager {
         }
     }
 
-    fun dismiss() {
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            removeCurrent()
-        } else {
-            mainHandler.post { removeCurrent() }
+    /** Dismisses the banner only if it's still showing the given source notification. */
+    fun dismissIfKey(key: String) {
+        mainHandler.post {
+            if (currentKey == key) removeCurrent()
         }
     }
 
@@ -129,6 +132,7 @@ object OverlayBannerManager {
     private fun removeCurrent() {
         dismissRunnable?.let { mainHandler.removeCallbacks(it) }
         dismissRunnable = null
+        currentKey = null
         val view = bannerView ?: return
         bannerView = null
         try {

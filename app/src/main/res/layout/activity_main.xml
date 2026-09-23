@@ -73,52 +73,7 @@
             android:layout_width="match_parent"
             android:layout_height="16dp" />
 
-        <!-- Step 2: POST_NOTIFICATIONS runtime permission -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/surface_light"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/post_notifications_section_title"
-                android:textColor="@color/text_primary_light"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/post_notifications_section_body"
-                android:textColor="@color/text_secondary_light"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/postNotificationsStatusText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/post_notifications_status_disabled"
-                android:textColor="@color/text_primary_light"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/grantPostNotificationsButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/grant_post_notifications_button" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="16dp" />
-
-        <!-- Step 3: Display-over-other-apps overlay permission -->
+        <!-- Step 2: Display-over-other-apps overlay permission -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -163,7 +118,7 @@
             android:layout_width="match_parent"
             android:layout_height="16dp" />
 
-        <!-- Step 4: Choose apps -->
+        <!-- Step 3: Choose apps -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
